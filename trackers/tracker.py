@@ -21,9 +21,7 @@ class Tracker:
             batch_detections = self.model.predict(frames[i:i+batch_size], conf=0.1)
 
             detections.extend(batch_detections)
-            
-
-       
+            break
         
         return detections
 
@@ -33,16 +31,68 @@ class Tracker:
     def get_object_track(self, frames):
       
         detections = self.detect_frames(frames)
+
+        # change the order like this: {'ball': 0, 'goalkeeper': 1, 'player': 2, 'referee': 3}
+        class_name_inv = {}
+
+        for k, v in detections[0].names.items():
+            class_name_inv[v] = k
+    
+        print(class_name_inv)
+
+        # we will have 
+        trackers = {
+            "players": [],
+            "referees": [],
+            "goalkeeper": [],
+            "ball": []
+        }
+
         
         #convert to supervision format
-        for i , detection in enumerate(detections):
-            print(detection.names)
+        for frame_id , detection in enumerate(detections):
+            
+           
             supervision_detection = sv.Detections.from_ultralytics(detection)
-             
 
             # track objects
             detection_tracks = self.tracker.update_with_detections(supervision_detection)
             print(detection_tracks)
+
+            trackers["players"].append({})
+            trackers["goalkeeper"].append({})
+            trackers["referees"].append({})
+            trackers["ball"].append({})
+
+            # for players:
+            for fd in detection_tracks:
+                bbox = fd[0].tolist()
+                cls_id = int(fd[3])
+                track_id = int(fd[4])
+
+                if cls_id == class_name_inv["player"]:
+                    trackers['players'][frame_id][track_id] = {"bbox": bbox}
+                if cls_id == class_name_inv["referee"]:
+                    trackers['referees'][frame_id][track_id] = {"bbox": bbox}
+                if cls_id == class_name_inv["goalkeeper"]:
+                    trackers['goalkeeper'][frame_id][track_id] = {"bbox": bbox}
+
+            for sd in supervision_detection:
+                bbox = sd[0].tolist()
+                cls_id = int(sd[3])
+
+                if cls_id == class_name_inv['ball']:
+                    trackers['ball'][frame_id][1] = {"bbox": bbox}
+
+        print(trackers["ball"])
+            
+                
+
+
+
+
+            
+         
 
             
        
