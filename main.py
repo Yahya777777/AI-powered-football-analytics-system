@@ -6,9 +6,11 @@ def main():
     #create a tracker instance
     tracker = Tracker("models/best.pt")
     
-    t = tracker.get_object_track(frames)
+    t = tracker.get_object_track(frames, True, "tracker.pk1")
 
-    #save_video(frames, 'output/output.avi')
+    output = tracker.draw_new_boundingBox(frames, t)
+
+    save_video(output, 'output/output.avi')
 
 if __name__ == '__main__':
     main()

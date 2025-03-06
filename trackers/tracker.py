@@ -1,5 +1,7 @@
 from ultralytics import YOLO
 import supervision as sv
+import pickle
+import cv2
 
 class Tracker:
     # load in the tracker and the model
@@ -21,14 +23,41 @@ class Tracker:
             batch_detections = self.model.predict(frames[i:i+batch_size], conf=0.1)
 
             detections.extend(batch_detections)
-            break
+         
         
         return detections
 
+    def draw_ellipse(self, frame, bbox, colour):
+
+        x1, y1, x2, y2 = bbox
+        x_center = int((x1+x2)/2)
+        width = int(x2 - x1)
+
+        cv2.ellipse(
+            frame,
+            center=(x_center, int(y2)),
+            axes=(int(width), int(0.30*width)),
+            angle=0.0,
+            startAngle=-40,
+            endAngle=240,
+            color=colour,
+            thickness=3,
+            lineType=cv2.LINE_4,
+
+        )
+        return frame
+
     
+
     # convert the detections to supervision detection format so that it can be used by ByteTrack later
     # The sv.Detections class enables easy data manipulation and filtering, and provides a consistent API for Supervision's tools like trackers, annotators, and zones.
-    def get_object_track(self, frames):
+    def get_object_track(self, frames, saved_in_file = False, pickle_path = None):
+
+        if saved_in_file and pickle_path != None:
+            with open(pickle_path, "rb") as file:
+                trackers = pickle.load(file)
+                
+            return trackers
       
         detections = self.detect_frames(frames)
 
@@ -40,7 +69,7 @@ class Tracker:
     
         print(class_name_inv)
 
-        # we will have 
+        # create an object that will store the track id of each entity in each frame 
         trackers = {
             "players": [],
             "referees": [],
@@ -66,8 +95,8 @@ class Tracker:
 
             # for players:
             for fd in detection_tracks:
-                bbox = fd[0].tolist()
-                cls_id = int(fd[3])
+                bbox = fd[0].tolist() # get the bounding box as a python list 
+                cls_id = int(fd[3]) # get the class id as int because it is a numpy number
                 track_id = int(fd[4])
 
                 if cls_id == class_name_inv["player"]:
@@ -76,7 +105,8 @@ class Tracker:
                     trackers['referees'][frame_id][track_id] = {"bbox": bbox}
                 if cls_id == class_name_inv["goalkeeper"]:
                     trackers['goalkeeper'][frame_id][track_id] = {"bbox": bbox}
-
+            # we don't need to track the ball since there is only one ball
+            # at first tracked the ball with other entities but it wasn't being tracked accurately and was missing from some frames ro I decided to not track it
             for sd in supervision_detection:
                 bbox = sd[0].tolist()
                 cls_id = int(sd[3])
@@ -84,9 +114,40 @@ class Tracker:
                 if cls_id == class_name_inv['ball']:
                     trackers['ball'][frame_id][1] = {"bbox": bbox}
 
-        print(trackers["ball"])
+            if pickle_path != None:
+
+                with open(pickle_path, "wb") as file:
+                    pickle.dump(trackers, file)
+                
+
+                
+
+        return trackers
             
                 
+    def draw_new_boundingBox(self, frames, trackers):
+        output_frames = []
+        for frame_num, frame in enumerate(frames):
+
+            players_dict = trackers["players"][frame_num]
+            referees_dict = trackers["referees"][frame_num]
+            goalkeeper_dict = trackers["goalkeeper"][frame_num]
+            ball_dict = trackers["ball"][frame_num]
+
+            for track_id, player in players_dict.items():
+                draw = self.draw_ellipse(frame, player['bbox'], (0,0,0))
+            
+
+            for track_id, referee in referees_dict.items():
+                draw =  self.draw_ellipse(frame, referee['bbox'], (0,0,225))
+            output_frames.append(draw)
+
+
+            
+        return output_frames
+
+
+
 
 
 
