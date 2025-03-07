@@ -2,12 +2,23 @@ from ultralytics import YOLO
 import supervision as sv
 import pickle
 import cv2
-
+from utils import get_bbox_center, get_bbox_width
+import numpy as np
+import pandas as pd
 class Tracker:
     # load in the tracker and the model
     def __init__(self, model_path):
         self.model = YOLO(model_path, verbose=False)
         self.tracker = sv.ByteTrack()
+
+    def predict_ball_position(self, ball_positions):
+        ball_positions = [position.get(1,{}).get('bbox',[]) for position in ball_positions]
+        df_ball_positiions = pd.DataFrame(ball_positions, columns=['x1','y1','x2','y2']) #convert ball_positions into pandas dataframe
+        df_ball_positions = df_ball_positiions.interpolate() #predictiong the in-between ball bbox
+        df_ball_positions = df_ball_positiions.bfill() #replicating the nearest second detection of bbox (if the first one is missing)
+
+        ball_positions = [{1: {"bbox":x}} for x in df_ball_positions.to_numpy().tolist()] #extract df_ball_positiions dataframe into ball_positions list
+        return ball_positions
 
     # detect the frames with YOLO
     # detections is an array of arrays with each array being the Coordinates of the bounding box , class id and confidence_score
