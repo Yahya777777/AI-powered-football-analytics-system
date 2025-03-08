@@ -3,11 +3,11 @@ from trackers import Tracker
 from team_assigner import TeamAssigner
 def main():
     # read frames
-    video_frames = read_video('input/match_clip.mp4')
+    video_frames = read_video('input/rca_vs_mas_test.mp4')
     #create a tracker instance
     tracker = Tracker("models/best.pt")
     
-    t = tracker.get_object_track(video_frames, True, "tracker.pk1")
+    t = tracker.get_object_track(video_frames, True, "tracker2.pk1")
 
     # assign teams to players
     team_assigner = TeamAssigner()
@@ -23,10 +23,11 @@ def main():
 
     # predict non-detected ball positions
     t["ball"] = tracker.predict_ball_position(t["ball"])
+    
 
     output = tracker.draw_new_boundingBox(video_frames, t)
 
-    save_video(output, 'output/output.avi')
+    save_video(output, 'output/output2.avi')
 
 if __name__ == '__main__':
     main()
