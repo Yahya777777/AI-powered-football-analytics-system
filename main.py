@@ -3,11 +3,11 @@ from trackers import Tracker
 from team_assigner import TeamAssigner
 def main():
     # read frames
-    video_frames = read_video('input/rca_vs_mas_test.mp4')
+    video_frames = read_video('input/ARS_VS_MCI.mp4')
     #create a tracker instance
     tracker = Tracker("models/best.pt")
     
-    t = tracker.get_object_track(video_frames, True, "tracker2.pk1")
+    t = tracker.get_object_track(video_frames, True, None)
 
     # assign teams to players
     team_assigner = TeamAssigner()
