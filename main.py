@@ -3,7 +3,7 @@ from trackers import Tracker
 from team_assigner import TeamAssigner
 def main():
     # read frames
-    video_frames = read_video('input/ARS_VS_MCI.mp4')
+    video_frames = read_video('input/Recording 2025-04-05 020634.mp4')
     #create a tracker instance
     tracker = Tracker("models/best.pt")
     
@@ -27,7 +27,7 @@ def main():
 
     output = tracker.draw_new_boundingBox(video_frames, t)
 
-    save_video(output, 'output/output2.avi')
+    save_video(output, 'output/output4.avi')
 
 if __name__ == '__main__':
     main()
