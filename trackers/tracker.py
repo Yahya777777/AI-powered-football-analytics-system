@@ -2,7 +2,7 @@ from ultralytics import YOLO
 import supervision as sv
 import pickle
 import cv2
-from utils import get_bbox_center, get_bbox_width
+from utils import get_bbox_center, get_bbox_width, get_foot_position
 import numpy as np
 import pandas as pd
 
@@ -12,6 +12,18 @@ class Tracker:
     def __init__(self, model_path):
         self.model = YOLO(model_path, verbose=False)
         self.tracker = sv.ByteTrack()
+
+    def add_position_to_tracks(sekf,tracks):
+        for object, object_tracks in tracks.items():
+            for frame_num, track in enumerate(object_tracks):
+                for track_id, track_info in track.items():
+                    bbox = track_info['bbox']
+                    if object == 'ball':
+                        position= get_bbox_center(bbox)
+                    else:
+                        position = get_foot_position(bbox)
+                    tracks[object][frame_num][track_id]['position'] = position
+
        
     def predict_ball_position(self, ball_positions):
         ball_positions = [position.get(1,{}).get('bbox',[]) for position in ball_positions]
